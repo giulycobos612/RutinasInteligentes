@@ -1,183 +1,159 @@
 package modelo;
 
-/**
- * Entidad que almacena los datos de rendimiento del estudiante.
- * Solo usa datos reales registrados en el programa, sin inventar nada.
- */
-public class ProgresoAcademico {
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 
-    // Minutos acumulados reales (lo que ingresa el sistema, no horas ficticias)
-    private int minutosAcumulados;
+public class ProgresoAcademico implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-    // Datos de sesiones (vienen de gestorRutinas)
-    private int totalSesiones;
-    private int sesionesCompletadas;
-    private double porcentajeCumplimiento;
-
-    // Datos de tareas (vienen de gestorMaterias)
-    private int totalTareas;
     private int tareasCompletadas;
-    private double porcentajeTareas;
+    private int tareasPendientes;
+    private int tareasVencidas;
 
-    // Estado evaluado por GestorProgreso
-    private String estadoRendimiento;
+    private int horasEstudiadas;
+    private int minutosEstudiados;
+    private int sesionesCompletadas;
+    private int sesionesTotales;
 
-    // Constructor: todo en cero, sin inventar nada
-    public ProgresoAcademico() {
-        this.minutosAcumulados     = 0;
-        this.totalSesiones         = 0;
-        this.sesionesCompletadas   = 0;
-        this.porcentajeCumplimiento= 0.0;
-        this.totalTareas           = 0;
-        this.tareasCompletadas     = 0;
-        this.porcentajeTareas      = 0.0;
-        this.estadoRendimiento     = "Sin evaluar";
-    }
+    // Nuevas metricas
+    private int tareasUrgentes; // vencen en 3 dias o menos
+    private int diasRacha;     // dias consecutivos con sesiones cumplidas
+    private double promedioCalificaciones;
+    private int materiasEnRiesgo; // calificacion < nota minima
 
-    // ─── MÉTODOS DE NEGOCIO ──────────────────────────────
+    public void recalcularProgreso(List<Tarea> tareas, List<RutinasEstudio> rutinas) {
+        tareasCompletadas = 0;
+        tareasPendientes = 0;
+        tareasVencidas = 0;
+        tareasUrgentes = 0;
 
-    /**
-     * Acumula los minutos reales de la sesión completada.
-     * El parámetro viene de sesion.getDuracionMinutos() (o 60 si es 0).
-     */
-    public void actualizarHoras(int minutosAgregados) {
-        if (minutosAgregados > 0) {
-            this.minutosAcumulados += minutosAgregados;
-        }
-    }
+        LocalDate hoy = LocalDate.now();
 
-    /**
-     * Calcula el % de sesiones cumplidas sobre el total real del programa.
-     */
-    public void calcularPorcentaje(int totalSesiones, int completadas) {
-        this.totalSesiones       = totalSesiones;
-        this.sesionesCompletadas = completadas;
-        if (totalSesiones > 0) {
-            this.porcentajeCumplimiento = ((double) completadas / totalSesiones) * 100.0;
-        } else {
-            this.porcentajeCumplimiento = 0.0;
-        }
-    }
-
-    /**
-     * Calcula el % de tareas completadas sobre el total real del programa.
-     */
-    public void calcularPorcentajeTareas(int totalTareas, int completadas) {
-        this.totalTareas       = totalTareas;
-        this.tareasCompletadas = completadas;
-        if (totalTareas > 0) {
-            this.porcentajeTareas = ((double) completadas / totalTareas) * 100.0;
-        } else {
-            this.porcentajeTareas = 0.0;
-        }
-    }
-
-    /**
-     * Progreso global: promedio entre sesiones y tareas.
-     * Si solo hay uno de los dos, usa ese solo.
-     */
-    public double calcularProgresoGlobal() {
-        boolean haySesiones = totalSesiones > 0;
-        boolean hayTareas   = totalTareas   > 0;
-
-        if (!haySesiones && !hayTareas) return 0.0;
-        if (!haySesiones)               return porcentajeTareas;
-        if (!hayTareas)                 return porcentajeCumplimiento;
-        return (porcentajeCumplimiento + porcentajeTareas) / 2.0;
-    }
-
-    /**
-     * Convierte los minutos acumulados reales a texto legible.
-     * Ej: 90 min → "1 h 30 min"
-     */
-    public String getTiempoFormateado() {
-        if (minutosAcumulados <= 0) return "0 min";
-        int horas   = minutosAcumulados / 60;
-        int minutos = minutosAcumulados % 60;
-        if (horas == 0)   return minutos + " min";
-        if (minutos == 0) return horas + " h";
-        return horas + " h " + minutos + " min";
-    }
-
-    /**
-     * Reporte limpio con datos reales, alineado para JOptionPane (fuente proporcional).
-     * Usa solo = y - para separadores, y texto con saltos de linea claros.
-     */
-    public String obtenerResumenProgreso() {
-        double global = calcularProgresoGlobal();
-
-        // Barra de progreso con 20 bloques ASCII simples
-        int bloques = (int) (global / 5.0);
-        StringBuilder barra = new StringBuilder("[");
-        for (int i = 0; i < 20; i++) {
-            barra.append(i < bloques ? "#" : ".");
-        }
-        barra.append("]");
-
-        // Si no hay datos aún
-        if (totalSesiones == 0 && totalTareas == 0) {
-            return "==============================\n"
-                    + "  PROGRESO ACADEMICO\n"
-                    + "==============================\n"
-                    + "\n"
-                    + "  No hay datos registrados aun.\n"
-                    + "  Completa sesiones o tareas\n"
-                    + "  para ver tu progreso.\n"
-                    + "\n"
-                    + "==============================";
+        if (tareas != null) {
+            for (Tarea t : tareas) {
+                if (t.isCompletada()) {
+                    tareasCompletadas++;
+                } else {
+                    long dias = ChronoUnit.DAYS.between(hoy, t.getFechaEntrega());
+                    if (dias < 0) {
+                        tareasVencidas++;
+                    } else {
+                        tareasPendientes++;
+                        if (dias <= 3) {
+                            tareasUrgentes++;
+                        }
+                    }
+                }
+            }
         }
 
-        return "==============================\n"
-                + "    PROGRESO ACADEMICO\n"
-                + "==============================\n"
-                + "\n"
-                + "  PROGRESO GLOBAL\n"
-                + "  " + barra + "\n"
-                + "  " + String.format("%.1f", global) + "% completado\n"
-                + "\n"
-                + "------------------------------\n"
-                + "  SESIONES DE ESTUDIO\n"
-                + "  Cumplidas : " + sesionesCompletadas + " de " + totalSesiones + "\n"
-                + "  Avance    : " + String.format("%.1f", porcentajeCumplimiento) + "%\n"
-                + "\n"
-                + "------------------------------\n"
-                + "  TAREAS\n"
-                + "  Completadas : " + tareasCompletadas + " de " + totalTareas + "\n"
-                + "  Avance      : " + String.format("%.1f", porcentajeTareas) + "%\n"
-                + "\n"
-                + "------------------------------\n"
-                + "  Tiempo de estudio : " + getTiempoFormateado() + "\n"
-                + "\n"
-                + "  Estado : " + estadoRendimiento + "\n"
-                + "==============================";
+        minutosEstudiados = 0;
+        sesionesCompletadas = 0;
+        sesionesTotales = 0;
+
+        if (rutinas != null) {
+            sesionesTotales = rutinas.size();
+            for (RutinasEstudio r : rutinas) {
+                if (r.isCumplida()) {
+                    sesionesCompletadas++;
+                    minutosEstudiados += r.getDuracionMinutos();
+                }
+            }
+        }
+        horasEstudiadas = minutosEstudiados / 60;
     }
 
-    // ─── GETTERS Y SETTERS ───────────────────────────────
+    public void recalcularMetricasExtendidas(List<Materia> materias, List<RutinasEstudio> rutinas) {
+        // Promedio de calificaciones
+        promedioCalificaciones = 0;
+        materiasEnRiesgo = 0;
+        if (materias != null && !materias.isEmpty()) {
+            double suma = 0;
+            for (Materia m : materias) {
+                suma += m.getCalificacionActual();
+                if (m.getCalificacionActual() < m.getNotaMinimaPersonal()) {
+                    materiasEnRiesgo++;
+                }
+            }
+            promedioCalificaciones = suma / materias.size();
+        }
 
-    public int getMinutosAcumulados() { return minutosAcumulados; }
-    public void setMinutosAcumulados(int m) { this.minutosAcumulados = m; }
+        // Racha de dias
+        diasRacha = calcularRacha(rutinas);
+    }
 
-    // Compatibilidad con GestorProgreso que llama getHorasAcumuladas()
-    public int getHorasAcumuladas() { return minutosAcumulados / 60; }
+    private int calcularRacha(List<RutinasEstudio> rutinas) {
+        if (rutinas == null || rutinas.isEmpty()) return 0;
 
-    public double getPorcentajeCumplimiento() { return porcentajeCumplimiento; }
-    public void setPorcentajeCumplimiento(double p) { this.porcentajeCumplimiento = p; }
+        LocalDate dia = LocalDate.now();
+        int racha = 0;
 
-    public double getPorcentajeTareas() { return porcentajeTareas; }
-    public void setPorcentajeTareas(double p) { this.porcentajeTareas = p; }
+        for (int i = 0; i < 365; i++) {
+            LocalDate diaCheck = dia.minusDays(i);
+            boolean tieneSesion = false;
+            boolean cumplida = false;
 
+            for (RutinasEstudio r : rutinas) {
+                if (r.getDia().equals(diaCheck)) {
+                    tieneSesion = true;
+                    if (r.isCumplida()) cumplida = true;
+                }
+            }
+
+            if (tieneSesion) {
+                if (cumplida) {
+                    racha++;
+                } else {
+                    break;
+                }
+            } else if (i > 0) {
+                // Si no habia sesion ese dia, continuamos (no rompe racha)
+                continue;
+            }
+        }
+        return racha;
+    }
+
+    // Getters existentes
     public int getTareasCompletadas() { return tareasCompletadas; }
-    public void setTareasCompletadas(int t) { this.tareasCompletadas = t; }
+    public int getTareasPendientes() { return tareasPendientes; }
+    public int getTareasVencidas() { return tareasVencidas; }
 
-    public int getTotalTareas() { return totalTareas; }
-    public void setTotalTareas(int t) { this.totalTareas = t; }
+    public int getTareasTotales() {
+        return tareasCompletadas + tareasPendientes + tareasVencidas;
+    }
 
+    public double getPorcentajeTareasCompletadas() {
+        if (getTareasTotales() == 0) return 0.0;
+        return (tareasCompletadas * 100.0) / getTareasTotales();
+    }
+
+    public int getHorasEstudiadas() { return horasEstudiadas; }
+    public int getMinutosEstudiados() { return minutosEstudiados; }
     public int getSesionesCompletadas() { return sesionesCompletadas; }
-    public void setSesionesCompletadas(int s) { this.sesionesCompletadas = s; }
+    public int getSesionesTotales() { return sesionesTotales; }
 
-    public int getTotalSesiones() { return totalSesiones; }
-    public void setTotalSesiones(int t) { this.totalSesiones = t; }
+    public double getPorcentajeSesionesCumplidas() {
+        if (sesionesTotales == 0) return 0.0;
+        return (sesionesCompletadas * 100.0) / sesionesTotales;
+    }
 
-    public String getEstadoRendimiento() { return estadoRendimiento; }
-    public void setEstadoRendimiento(String e) { this.estadoRendimiento = e; }
+    // Nuevos getters
+    public int getTareasUrgentes() { return tareasUrgentes; }
+    public int getDiasRacha() { return diasRacha; }
+    public double getPromedioCalificaciones() { return promedioCalificaciones; }
+    public int getMateriasEnRiesgo() { return materiasEnRiesgo; }
+
+    public String getMensajeMotivacional() {
+        double pct = getPorcentajeTareasCompletadas();
+        if (getTareasTotales() == 0) return "Registra tus materias y tareas para comenzar!";
+        if (tareasVencidas > 0) return "Tienes " + tareasVencidas + " tarea(s) vencida(s). Ponte al dia!";
+        if (tareasUrgentes > 0) return "Atencion: " + tareasUrgentes + " tarea(s) vencen en menos de 3 dias.";
+        if (pct >= 80) return "Excelente! Llevas un gran ritmo, sigue asi!";
+        if (pct >= 50) return "Buen progreso! Ya vas por la mitad, no aflojes.";
+        if (pct >= 25) return "Vas avanzando. Cada tarea completada cuenta!";
+        return "Es hora de ponerse al dia con las tareas pendientes.";
+    }
 }

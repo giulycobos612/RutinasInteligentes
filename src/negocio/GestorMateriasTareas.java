@@ -2,185 +2,201 @@ package negocio;
 
 import modelo.Materia;
 import modelo.Tarea;
+import modelo.Usuario;
+
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class GestorMateriasTareas {
-    private List<Materia> listaMaterias;
-    private List<Tarea> listaTareas;
+    private GestorUsuario gestorUsuario;
 
-    public GestorMateriasTareas() {
-        this.listaMaterias = new ArrayList<>();
-        this.listaTareas = new ArrayList<>();
+    public GestorMateriasTareas(GestorUsuario gestorUsuario) {
+        this.gestorUsuario = gestorUsuario;
     }
+
+    private Usuario getUsuario() {
+        Usuario u = gestorUsuario.getUsuarioActivo();
+        if (u == null) throw new IllegalStateException("No hay un usuario activo en sesion.");
+        return u;
+    }
+
+    // ===================== MATERIAS =====================
 
     public String registrarMateria(String nombreMateria, String nivelDificultad,
                                    double calificacionActual, double notaMinimaPersonal) {
-        if (notaMinimaPersonal <= 0) {
-            return "Error: La nota mínima personal debe ser mayor a 0.";
+        // Validaciones exhaustivas
+        if (nombreMateria == null || nombreMateria.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de la materia es obligatorio.");
+        }
+        if (nombreMateria.trim().length() < 2) {
+            throw new IllegalArgumentException("El nombre de la materia debe tener al menos 2 caracteres.");
+        }
+        if (nombreMateria.trim().length() > 50) {
+            throw new IllegalArgumentException("El nombre de la materia no puede exceder 50 caracteres.");
+        }
+        if (calificacionActual < 0 || calificacionActual > 10) {
+            throw new IllegalArgumentException("La calificacion debe estar entre 0 y 10.");
+        }
+        if (notaMinimaPersonal <= 0 || notaMinimaPersonal > 10) {
+            throw new IllegalArgumentException("La nota minima debe estar entre 1 y 10.");
         }
 
-        Materia materia = new Materia(nombreMateria, nivelDificultad,
-                calificacionActual, notaMinimaPersonal);
+        Usuario u = getUsuario();
+        if (u.getMaterias().size() >= u.getCantidadMaterias()) {
+            throw new IllegalArgumentException("Limite de materias alcanzado (" + u.getCantidadMaterias() + "). No puedes agregar mas.");
+        }
+        if (buscarMateria(nombreMateria) != null) {
+            throw new IllegalArgumentException("Ya existe una materia llamada '" + nombreMateria.trim() + "'.");
+        }
 
+        Materia materia = new Materia(nombreMateria, nivelDificultad, calificacionActual, notaMinimaPersonal);
         double horas = calcularHoras(nivelDificultad, calificacionActual, notaMinimaPersonal);
         materia.setHorasRecomendadas(horas);
 
-        listaMaterias.add(materia);
+        u.getMaterias().add(materia);
+        gestorUsuario.guardarCambios();
 
         return generarMensajeRendimiento(calificacionActual, notaMinimaPersonal);
     }
 
-    public String registrarTarea(String nombreTarea, String fechaEntrega, String nombreMateria) {
-        Materia materiaEncontrada = buscarMateria(nombreMateria);
+    // ===================== TAREAS =====================
 
+    public String registrarTarea(String nombreTarea, LocalDate fechaEntrega, Materia materiaEncontrada) {
+        // Validaciones exhaustivas
+        if (nombreTarea == null || nombreTarea.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de la tarea es obligatorio.");
+        }
+        if (nombreTarea.trim().length() < 2) {
+            throw new IllegalArgumentException("El nombre de la tarea debe tener al menos 2 caracteres.");
+        }
+        if (nombreTarea.trim().length() > 80) {
+            throw new IllegalArgumentException("El nombre de la tarea no puede exceder 80 caracteres.");
+        }
         if (materiaEncontrada == null) {
-            return "Error: La materia ingresada no existe en el sistema.";
+            throw new IllegalArgumentException("Debes seleccionar una materia.");
+        }
+        if (fechaEntrega == null) {
+            throw new IllegalArgumentException("La fecha de entrega es obligatoria.");
         }
 
         LocalDate hoy = LocalDate.now();
-        LocalDate fecha = LocalDate.parse(fechaEntrega, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        if (fechaEntrega.isBefore(hoy)) {
+            throw new IllegalArgumentException("No puedes registrar una tarea con fecha pasada (" + fechaEntrega + "). Selecciona hoy o una fecha futura.");
+        }
 
-        if (fecha.isBefore(hoy)) {
-            return "Error: No se puede registrar una tarea con fecha de entrega ya vencida.";
+        // Validar que no exista tarea duplicada con mismo nombre en misma materia
+        for (Tarea existente : getUsuario().getTareas()) {
+            if (existente.getNombreTarea().equalsIgnoreCase(nombreTarea.trim()) &&
+                existente.getMateria().equals(materiaEncontrada)) {
+                throw new IllegalArgumentException("Ya existe una tarea '" + nombreTarea.trim() + "' en " + materiaEncontrada.getNombreMateria() + ".");
+            }
         }
 
         Tarea tarea = new Tarea(nombreTarea, fechaEntrega, materiaEncontrada);
-
         String prioridad = calcularPrioridad(fechaEntrega, materiaEncontrada.getNivelDificultad(),
                 materiaEncontrada.getCalificacionActual(), materiaEncontrada.getNotaMinimaPersonal());
         tarea.setPrioridad(prioridad);
 
-        listaTareas.add(tarea);
+        Usuario u = getUsuario();
+        u.getTareas().add(tarea);
+        ordenarTareas();
+        gestorUsuario.guardarCambios();
 
-        return "Tarea registrada correctamente. Prioridad asignada: " + prioridad;
+        return "Tarea registrada. Prioridad: " + prioridad;
     }
 
-    public String marcarTareaCompletada(int indice) {
-        if (indice < 0 || indice >= listaTareas.size()) {
-            return "Error: Número de tarea no válido.";
-        }
-
-        Tarea t = listaTareas.get(indice);
-
-        if (t.isCompletada()) {
-            return "La tarea '" + t.getNombreTarea() + "' ya estaba marcada como completada.";
-        }
-
-        t.setCompletada(true);
-        return "Tarea '" + t.getNombreTarea() + "' de la materia '" +
-                t.getMateria().getNombreMateria() + "' marcada como completada.";
+    public void marcarTareaCompletada(Tarea t, boolean completada) {
+        if (t == null) throw new IllegalArgumentException("La tarea no puede ser nula.");
+        t.setCompletada(completada);
+        gestorUsuario.guardarCambios();
     }
 
-    public String eliminarMateria(int indice) {
-        if (indice < 0 || indice >= listaMaterias.size()) {
-            return "Error: Número de materia no válido.";
-        }
-
-        Materia materiaAEliminar = listaMaterias.get(indice);
-
-        listaTareas.removeIf(t -> t.getMateria().getNombreMateria()
-                .equalsIgnoreCase(materiaAEliminar.getNombreMateria()));
-
-        listaMaterias.remove(indice);
-
-        return "Materia '" + materiaAEliminar.getNombreMateria() +
-                "' y sus tareas asociadas eliminadas correctamente.";
+    public void eliminarMateria(Materia materiaAEliminar) {
+        if (materiaAEliminar == null) throw new IllegalArgumentException("La materia no puede ser nula.");
+        Usuario u = getUsuario();
+        u.getTareas().removeIf(t -> t.getMateria().getNombreMateria().equalsIgnoreCase(materiaAEliminar.getNombreMateria()));
+        u.getRutinas().removeIf(r -> r.getTarea() != null && r.getTarea().getMateria().getNombreMateria().equalsIgnoreCase(materiaAEliminar.getNombreMateria()));
+        u.getMaterias().remove(materiaAEliminar);
+        gestorUsuario.guardarCambios();
     }
 
-    public String eliminarTarea(int indice) {
-        if (indice < 0 || indice >= listaTareas.size()) {
-            return "Error: Número de tarea no válido.";
-        }
-
-        Tarea tareaAEliminar = listaTareas.get(indice);
-        listaTareas.remove(indice);
-
-        return "Tarea '" + tareaAEliminar.getNombreTarea() + "' eliminada correctamente.";
+    public void eliminarTarea(Tarea tareaAEliminar) {
+        if (tareaAEliminar == null) throw new IllegalArgumentException("La tarea no puede ser nula.");
+        Usuario u = getUsuario();
+        u.getRutinas().removeIf(r -> r.getTarea() != null && r.getTarea().equals(tareaAEliminar));
+        u.getTareas().remove(tareaAEliminar);
+        gestorUsuario.guardarCambios();
     }
 
-    private Materia buscarMateria(String nombreMateria) {
-        for (Materia m : listaMaterias) {
-            if (m.getNombreMateria().equalsIgnoreCase(nombreMateria)) {
+    public Materia buscarMateria(String nombreMateria) {
+        if (nombreMateria == null) return null;
+        for (Materia m : getUsuario().getMaterias()) {
+            if (m.getNombreMateria().equalsIgnoreCase(nombreMateria.trim())) {
                 return m;
             }
         }
         return null;
     }
 
-    private double calcularHoras(String nivelDificultad, double calificacionActual,
-                                 double notaMinimaPersonal) {
-        double horasBase;
+    public List<Materia> getListaMaterias() {
+        return getUsuario().getMaterias();
+    }
 
-        if (nivelDificultad.equalsIgnoreCase("alto")) {
-            horasBase = 5;
-        } else if (nivelDificultad.equalsIgnoreCase("medio")) {
-            horasBase = 3;
-        } else {
-            horasBase = 2;
+    public List<Tarea> getListaTareas() {
+        return getUsuario().getTareas();
+    }
+
+    // ===================== UTILIDADES =====================
+
+    private void ordenarTareas() {
+        getUsuario().getTareas().sort(Comparator
+                .comparing(Tarea::isCompletada)
+                .thenComparing(Tarea::getFechaEntrega));
+    }
+
+    private double calcularHoras(String nivelDificultad, double calificacionActual, double notaMinimaPersonal) {
+        double horasBase = 2;
+        if (nivelDificultad != null) {
+            if (nivelDificultad.equalsIgnoreCase("alto")) horasBase = 5;
+            else if (nivelDificultad.equalsIgnoreCase("medio")) horasBase = 3;
         }
-
         if (calificacionActual < notaMinimaPersonal) {
             horasBase += 2;
         } else if (calificacionActual - notaMinimaPersonal < 1) {
             horasBase += 1;
         }
-
         return horasBase;
     }
 
     private String generarMensajeRendimiento(double calificacionActual, double notaMinimaPersonal) {
         if (calificacionActual < notaMinimaPersonal) {
-            return "Materia registrada. Estás por debajo de tu nota mínima, se recomienda priorizar esta materia.";
+            return "Materia registrada. Estas por debajo de tu nota minima, priorizala.";
         } else if (calificacionActual - notaMinimaPersonal < 1) {
-            return "Materia registrada. Advertencia: estás cerca de tu nota mínima.";
+            return "Materia registrada. Advertencia: estas cerca de tu nota minima.";
         } else {
-            return "Materia registrada. ¡Vas bien, mantén el ritmo!";
+            return "Materia registrada. Vas bien, manten el ritmo!";
         }
     }
 
-    private String calcularPrioridad(String fechaEntrega, String nivelDificultad,
+    private String calcularPrioridad(LocalDate fechaEntrega, String nivelDificultad,
                                      double calificacionActual, double notaMinimaPersonal) {
         LocalDate hoy = LocalDate.now();
-        LocalDate fecha = LocalDate.parse(fechaEntrega, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        long diasRestantes = ChronoUnit.DAYS.between(hoy, fecha);
+        long diasRestantes = ChronoUnit.DAYS.between(hoy, fechaEntrega);
 
-        if (diasRestantes <= 2 && calificacionActual < notaMinimaPersonal) {
-            return "CRÍTICA";
-        } else if (diasRestantes <= 5 || nivelDificultad.equalsIgnoreCase("alto")) {
-            return "ALTA";
-        } else if (diasRestantes <= 10 && nivelDificultad.equalsIgnoreCase("medio")) {
-            return "MEDIA";
+        if (diasRestantes < 0) {
+            return "Vencida";
+        } else if (diasRestantes <= 1) {
+            return "Urgente";
+        } else if (diasRestantes <= 3) {
+            return "Alta";
+        } else if (diasRestantes <= 7 || (nivelDificultad != null && nivelDificultad.equalsIgnoreCase("alto"))) {
+            return "Alta";
+        } else if (diasRestantes <= 14 && (nivelDificultad != null && nivelDificultad.equalsIgnoreCase("medio"))) {
+            return "Media";
         } else {
-            return "BAJA";
+            return "Baja";
         }
-    }
-
-    public List<Materia> getListaMaterias() { return listaMaterias; }
-    public List<Tarea> getListaTareas() { return listaTareas; }
-
-    public String listarMaterias() {
-        if (listaMaterias.isEmpty()) {
-            return "No hay materias registradas aún.";
-        }
-        String texto = "--- LISTA DE MATERIAS ---\n\n";
-        for (Materia m : listaMaterias) {
-            texto += m.mostrarDatos() + "\n\n";
-        }
-        return texto;
-    }
-
-    public String listarTareas() {
-        if (listaTareas.isEmpty()) {
-            return "No hay tareas registradas aún.";
-        }
-        String texto = "--- LISTA DE TAREAS ---\n\n";
-        for (Tarea t : listaTareas) {
-            texto += t.mostrarDatos() + "\n\n";
-        }
-        return texto;
     }
 }

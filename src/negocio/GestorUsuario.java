@@ -1,145 +1,105 @@
 package negocio;
 
 import modelo.Usuario;
-
 import java.util.ArrayList;
 
 public class GestorUsuario {
 
     private ArrayList<Usuario> usuarios;
+    private Usuario usuarioActivo;
 
     public GestorUsuario() {
-
-        usuarios = new ArrayList<>();
-
+        usuarios = ManejadorDatos.cargarUsuarios();
     }
 
     public boolean correoExiste(String correo) {
-
-        for (Usuario usuario : usuarios) {
-
-            if (usuario.getCorreoElectronico().equalsIgnoreCase(correo)) {
-
-                return true;
-
-            }
-
-        }
-
-        return false;
-
+        if (correo == null) return false;
+        return usuarios.stream().anyMatch(u -> u.getCorreoElectronico().equalsIgnoreCase(correo.trim()));
     }
 
     public String calcularPerfil(int materias, int horas) {
-
+        if (materias <= 0) return "INDEFINIDO";
         int promedio = horas / materias;
-
-        if (promedio >= 5) {
-
-            return "EFICIENTE";
-
-        } else if (promedio >= 3) {
-
-            return "RESTRINGIDO";
-
-        } else {
-
-            return "SATURADO";
-
-        }
-
+        if (promedio >= 5) return "EFICIENTE";
+        if (promedio >= 3) return "RESTRINGIDO";
+        return "SATURADO";
     }
 
-    public String registrarUsuario(Usuario usuario) {
-
-        // Validar correo repetido
+    public String registrarUsuario(Usuario usuario) throws IllegalArgumentException {
         if (correoExiste(usuario.getCorreoElectronico())) {
-
-            return "Error: el correo ya está registrado.";
-
+            throw new IllegalArgumentException("El correo ya está registrado.");
         }
-
-        // Validar contraseña
-        if (usuario.getContrasena().length() < 8) {
-
-            return "Error: la contraseña debe tener mínimo 8 caracteres.";
-
+        if (usuario.getContrasena() == null || usuario.getContrasena().length() < 8) {
+            throw new IllegalArgumentException("La contraseña debe tener mínimo 8 caracteres.");
         }
-
-        // Validar cantidad de materias
         if (usuario.getCantidadMaterias() <= 0) {
-
-            return "Error: la cantidad de materias debe ser mayor a cero.";
-
+            throw new IllegalArgumentException("La cantidad de materias debe ser mayor a cero.");
         }
-
-        // Validar horas disponibles
         if (usuario.getHorasDisponibles() < 0) {
-
-            return "Error: las horas disponibles no pueden ser negativas.";
-
+            throw new IllegalArgumentException("Las horas disponibles no pueden ser negativas.");
+        }
+        if (!usuario.getCorreoElectronico().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new IllegalArgumentException("El formato del correo electrónico es inválido.");
         }
 
-        // Calcular perfil académico
-        String perfil = calcularPerfil(
-                usuario.getCantidadMaterias(),
-                usuario.getHorasDisponibles()
-        );
-
-        // Guardar perfil
+        String perfil = calcularPerfil(usuario.getCantidadMaterias(), usuario.getHorasDisponibles());
         usuario.setPerfilViabilidad(perfil);
-
-        // Guardar usuario
         usuarios.add(usuario);
-
+        
+        ManejadorDatos.guardarUsuarios(usuarios);
         return "Usuario registrado correctamente. Perfil: " + perfil;
-
     }
 
-    public Usuario iniciarSesion(String correo, String contrasena) {
+    public Usuario iniciarSesion(String correo, String contrasena) throws IllegalArgumentException {
+        if (correo == null || correo.trim().isEmpty() || contrasena == null || contrasena.isEmpty()) {
+            throw new IllegalArgumentException("Correo y contraseña son obligatorios.");
+        }
 
         for (Usuario usuario : usuarios) {
-
-            // Buscar correo
-            if (usuario.getCorreoElectronico().equalsIgnoreCase(correo)) {
-
-                // Verificar si la cuenta está bloqueada
+            if (usuario.getCorreoElectronico().equalsIgnoreCase(correo.trim())) {
                 if (usuario.isCuentaBloqueada()) {
-
-                    return null;
-
+                    throw new IllegalArgumentException("La cuenta está bloqueada por demasiados intentos fallidos.");
                 }
-
-                // Verificar contraseña
                 if (usuario.getContrasena().equals(contrasena)) {
-
-                    // Reiniciar intentos fallidos
                     usuario.setIntentosFallidos(0);
-
+                    usuarioActivo = usuario;
+                    ManejadorDatos.guardarUsuarios(usuarios);
                     return usuario;
-
                 } else {
-
-                    // Aumentar intentos fallidos
-                    usuario.setIntentosFallidos(
-                            usuario.getIntentosFallidos() + 1
-                    );
-
-                    // Bloquear cuenta si llega a 3 intentos
+                    usuario.setIntentosFallidos(usuario.getIntentosFallidos() + 1);
                     if (usuario.getIntentosFallidos() >= 3) {
-
                         usuario.setCuentaBloqueada(true);
-
+                        ManejadorDatos.guardarUsuarios(usuarios);
+                        throw new IllegalArgumentException("Cuenta bloqueada por múltiples intentos fallidos.");
                     }
-
+                    ManejadorDatos.guardarUsuarios(usuarios);
+                    throw new IllegalArgumentException("Contraseña incorrecta. Intentos restantes: " + (3 - usuario.getIntentosFallidos()));
                 }
-
             }
-
         }
-
-        return null;
-
+        throw new IllegalArgumentException("El usuario no existe.");
+    }
+    
+    public void cerrarSesion() {
+        if (usuarioActivo != null) {
+            ManejadorDatos.guardarUsuarios(usuarios);
+            usuarioActivo = null;
+        }
     }
 
+    public Usuario getUsuarioActivo() {
+        return usuarioActivo;
+    }
+    
+    public void setUsuarioActivo(Usuario usuarioActivo) {
+        this.usuarioActivo = usuarioActivo;
+    }
+
+    public ArrayList<Usuario> getUsuarios() {
+        return usuarios;
+    }
+    
+    public void guardarCambios() {
+        ManejadorDatos.guardarUsuarios(usuarios);
+    }
 }

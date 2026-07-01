@@ -1,61 +1,74 @@
 package modelo;
 
+import java.io.Serializable;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
-public class RutinasEstudio {
+public class RutinasEstudio implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-    private String dia;
-    private String horaInicio;
-    private String horaFin;
+    private LocalDate dia;
+    private LocalTime horaInicio;
+    private LocalTime horaFin;
     private int duracionMinutos;
     private boolean esDescanso;
     private boolean cumplida;
     private Tarea tarea;
     private String nombreSesion;
+    private boolean recordatorioActivado;
 
-    public RutinasEstudio(String dia, String horaInicio, String horaFin,
-                          int duracionMinutos, Tarea tarea) {
-        this.dia = dia;
-        this.horaInicio = horaInicio;
-        this.horaFin = horaFin;
-        setDuracionMinutos(duracionMinutos);
+    public RutinasEstudio(LocalDate dia, LocalTime horaInicio, LocalTime horaFin, Tarea tarea) {
+        setDia(dia);
+        setHoraInicio(horaInicio);
+        setHoraFin(horaFin);
+        calcularDuracion();
         this.tarea = tarea;
         this.esDescanso = false;
         this.cumplida = false;
         this.nombreSesion = "";
+        this.recordatorioActivado = false;
     }
 
-    public RutinasEstudio(String dia, String horaInicio, String horaFin, int duracionMinutos) {
-        this(dia, horaInicio, horaFin, duracionMinutos, null);
+    public RutinasEstudio(LocalDate dia, LocalTime horaInicio, LocalTime horaFin) {
+        this(dia, horaInicio, horaFin, null);
         this.esDescanso = false;
         this.nombreSesion = "Sesión de estudio";
     }
 
-    public String getDia() { return dia; }
-    public void setDia(String dia) { this.dia = dia; }
+    public LocalDate getDia() { return dia; }
+    public void setDia(LocalDate dia) { 
+        if (dia == null) throw new IllegalArgumentException("El día no puede ser nulo.");
+        this.dia = dia; 
+    }
 
-    public String getHoraInicio() { return horaInicio; }
-    public void setHoraInicio(String horaInicio) { this.horaInicio = horaInicio; }
+    public LocalTime getHoraInicio() { return horaInicio; }
+    public void setHoraInicio(LocalTime horaInicio) { 
+        if (horaInicio == null) throw new IllegalArgumentException("La hora de inicio no puede ser nula.");
+        this.horaInicio = horaInicio;
+        calcularDuracion();
+    }
 
-    public String getHoraFin() { return horaFin; }
-    public void setHoraFin(String horaFin) { this.horaFin = horaFin; }
+    public LocalTime getHoraFin() { return horaFin; }
+    public void setHoraFin(LocalTime horaFin) { 
+        if (horaFin == null) throw new IllegalArgumentException("La hora de fin no puede ser nula.");
+        this.horaFin = horaFin;
+        calcularDuracion();
+    }
 
-    public int getDuracionMinutos() { return duracionMinutos; }
-    public void setDuracionMinutos(int duracionMinutos) {
-        try {
-            if (horaInicio != null && horaFin != null && !horaInicio.isEmpty() && !horaFin.isEmpty()) {
-                LocalTime inicio = LocalTime.parse(horaInicio);
-                LocalTime fin = LocalTime.parse(horaFin);
-                Duration duracion = Duration.between(inicio, fin);
-                this.duracionMinutos = (int) duracion.toMinutes();
-            } else {
-                this.duracionMinutos = 0;
+    private void calcularDuracion() {
+        if (horaInicio != null && horaFin != null) {
+            if (horaFin.isBefore(horaInicio)) {
+                throw new IllegalArgumentException("La hora de fin debe ser posterior a la hora de inicio.");
             }
-        } catch (Exception e) {
+            this.duracionMinutos = (int) Duration.between(horaInicio, horaFin).toMinutes();
+        } else {
             this.duracionMinutos = 0;
         }
     }
+
+    public int getDuracionMinutos() { return duracionMinutos; }
 
     public boolean isEsDescanso() { return esDescanso; }
     public void setEsDescanso(boolean esDescanso) { this.esDescanso = esDescanso; }
@@ -69,22 +82,23 @@ public class RutinasEstudio {
     public String getNombreSesion() { return nombreSesion; }
     public void setNombreSesion(String nombreSesion) { this.nombreSesion = nombreSesion; }
 
+    public boolean isRecordatorioActivado() { return recordatorioActivado; }
+    public void setRecordatorioActivado(boolean recordatorioActivado) { this.recordatorioActivado = recordatorioActivado; }
+
+    public String getDiaFormateado() {
+        return dia.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+    
+    public String getHoraInicioFormateada() {
+        return horaInicio.format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    public String getHoraFinFormateada() {
+        return horaFin.format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
     @Override
     public String toString() {
-        if (esDescanso) {
-            return dia + " " + horaInicio + "-" + horaFin
-                    + " | DESCANSO (" + duracionMinutos + " min)";
-        }
-        if (tarea == null) {
-            return dia + " " + horaInicio + "-" + horaFin
-                    + " | " + nombreSesion
-                    + " | " + duracionMinutos + " min"
-                    + " | Cumplida: " + cumplida;
-        }
-        return dia + " " + horaInicio + "-" + horaFin
-                + " | " + tarea.getMateria().getNombreMateria()
-                + " | Tarea: " + tarea.getNombreTarea()
-                + " | " + duracionMinutos + " min"
-                + " | Cumplida: " + cumplida;
+        return nombreSesion.isEmpty() ? (tarea != null ? tarea.getNombreTarea() : "Sesión") : nombreSesion;
     }
 }

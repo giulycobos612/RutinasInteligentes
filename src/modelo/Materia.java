@@ -1,6 +1,10 @@
 package modelo;
 
-public class Materia {
+import java.io.Serializable;
+
+public class Materia implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private String nombreMateria;
     private String nivelDificultad;
     private double calificacionActual;
@@ -9,21 +13,26 @@ public class Materia {
 
     public Materia(String nombreMateria, String nivelDificultad,
                    double calificacionActual, double notaMinimaPersonal) {
-        this.nombreMateria = nombreMateria;
+        setNombreMateria(nombreMateria);
         setNivelDificultad(nivelDificultad);
         setCalificacionActual(calificacionActual);
         setNotaMinimaPersonal(notaMinimaPersonal);
     }
 
     public String getNombreMateria() { return nombreMateria; }
-    public void setNombreMateria(String nombreMateria) { this.nombreMateria = nombreMateria; }
+    public void setNombreMateria(String nombreMateria) { 
+        if (nombreMateria == null || nombreMateria.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre de la materia no puede estar vacío.");
+        }
+        this.nombreMateria = nombreMateria.trim(); 
+    }
 
     public String getNivelDificultad() { return nivelDificultad; }
     public void setNivelDificultad(String nivelDificultad) {
-        if (nivelDificultad.equalsIgnoreCase("alto") ||
+        if (nivelDificultad != null && (nivelDificultad.equalsIgnoreCase("alto") ||
                 nivelDificultad.equalsIgnoreCase("medio") ||
-                nivelDificultad.equalsIgnoreCase("bajo")) {
-            this.nivelDificultad = nivelDificultad;
+                nivelDificultad.equalsIgnoreCase("bajo"))) {
+            this.nivelDificultad = nivelDificultad.toLowerCase();
         } else {
             this.nivelDificultad = "medio";
         }
@@ -31,28 +40,31 @@ public class Materia {
 
     public double getCalificacionActual() { return calificacionActual; }
     public void setCalificacionActual(double calificacionActual) {
-        if (calificacionActual >= 0 && calificacionActual <= 10)
+        if (calificacionActual >= 0 && calificacionActual <= 10) {
             this.calificacionActual = calificacionActual;
+        } else {
+            throw new IllegalArgumentException("La calificación debe estar entre 0 y 10.");
+        }
     }
 
     public double getNotaMinimaPersonal() { return notaMinimaPersonal; }
     public void setNotaMinimaPersonal(double notaMinimaPersonal) {
-        if (notaMinimaPersonal > 0 && notaMinimaPersonal <= 10)
+        if (notaMinimaPersonal > 0 && notaMinimaPersonal <= 10) {
             this.notaMinimaPersonal = notaMinimaPersonal;
+        } else {
+            throw new IllegalArgumentException("La nota mínima debe estar entre 1 y 10.");
+        }
     }
 
     public double getHorasRecomendadas() { return horasRecomendadas; }
     public void setHorasRecomendadas(double horasRecomendadas) {
-        this.horasRecomendadas = horasRecomendadas;
+        if (horasRecomendadas >= 0) {
+            this.horasRecomendadas = horasRecomendadas;
+        }
     }
 
-    public String mostrarDatos() {
-        return "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                "MATERIA: " + nombreMateria + "\n" +
-                "Dificultad: " + nivelDificultad + "\n" +
-                "Calificación actual: " + calificacionActual + "\n" +
-                "Nota mínima deseada: " + notaMinimaPersonal + "\n" +
-                "Horas recomendadas: " + horasRecomendadas + " hrs\n" +
-                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+    @Override
+    public String toString() {
+        return nombreMateria;
     }
 }
