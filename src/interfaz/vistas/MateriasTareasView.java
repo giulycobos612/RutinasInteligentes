@@ -145,7 +145,7 @@ public class MateriasTareasView extends JPanel {
         ModernCard card = new ModernCard(15, true, cardColor);
         card.setLayout(new BorderLayout(0, 10));
         card.setBorder(new EmptyBorder(18, 20, 15, 20));
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         // Header de materia
         JPanel top = new JPanel(new BorderLayout());
@@ -179,8 +179,8 @@ public class MateriasTareasView extends JPanel {
         btnDel.setForeground(Tema.PELIGRO);
         btnDel.setPreferredSize(new Dimension(80, 28));
         btnDel.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(mainFrame, "Eliminar '" + m.getNombreMateria() + "'?", "Confirmar", JOptionPane.YES_NO_OPTION);
-            if (r == JOptionPane.YES_OPTION) {
+            boolean confirm = ModernConfirmDialog.showConfirmDialog(mainFrame, "Eliminar '" + m.getNombreMateria() + "'?", "Confirmar");
+            if (confirm) {
                 try {
                     gestor.eliminarMateria(m);
                     actualizarView();
@@ -239,7 +239,7 @@ public class MateriasTareasView extends JPanel {
             if (chk.isSelected()) {
                 t.setPorcentajeAvance(100);
                 String msg = gestor.obtenerMensajeAvance(t);
-                ModernToast.show(mainFrame, msg, ModernToast.Type.SUCCESS, false);
+                ModernToast.show(mainFrame, msg, ModernToast.Type.SUCCESS);
             } else {
                 ModernToast.show(mainFrame, "Tarea restaurada a Pendientes", ModernToast.Type.INFO);
             }
@@ -290,8 +290,8 @@ public class MateriasTareasView extends JPanel {
         btnDel.setFont(Tema.FONT_PEQUENA);
         btnDel.setPreferredSize(new Dimension(85, 28));
         btnDel.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(mainFrame, "¿Seguro deseas eliminar esta tarea?", "Confirmar", JOptionPane.YES_NO_OPTION);
-            if (r == JOptionPane.YES_OPTION) {
+            boolean confirm = ModernConfirmDialog.showConfirmDialog(mainFrame, "¿Seguro deseas eliminar esta tarea?", "Confirmar");
+            if (confirm) {
                 gestor.eliminarTarea(t);
                 actualizarView();
             }

@@ -161,6 +161,10 @@ public class ConfiguracionView extends JPanel {
                     ModernToast.show(mainFrame, "La nueva contrasena debe tener al menos 8 caracteres.", ModernToast.Type.ERROR);
                     return;
                 }
+                if (passNueva.equals(u.getContrasena())) {
+                    ModernToast.show(mainFrame, "La nueva contrasena no puede ser igual a la anterior.", ModernToast.Type.ERROR);
+                    return;
+                }
                 if (!passNueva.equals(passConfirm)) {
                     ModernToast.show(mainFrame, "Las nuevas contrasenas no coinciden.", ModernToast.Type.ERROR);
                     return;
