@@ -61,8 +61,14 @@ public class RutinasView extends JPanel {
         ModernButton btnAdd = new ModernButton("+ Agendar Sesion");
         btnAdd.setColors(Tema.SECUNDARIO, Tema.SECUNDARIO.darker());
         btnAdd.addActionListener(e -> mostrarFormSesion(null));
+        
+        ModernButton btnSchedule = new ModernButton("Ver horario del dia");
+        btnSchedule.setColors(Tema.INFO, Tema.INFO.darker());
+        btnSchedule.addActionListener(e -> interfaz.componentes.ModernScheduleDialog.showDialog(mainFrame, gestor));
+        
         JPanel actionsP = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actionsP.setOpaque(false);
+        actionsP.add(btnSchedule);
         actionsP.add(btnAdd);
         header.add(actionsP, BorderLayout.EAST);
 
