@@ -336,7 +336,8 @@ public class DashboardView extends JPanel {
                 dayLabel.addMouseListener(new java.awt.event.MouseAdapter() {
                     @Override
                     public void mouseClicked(java.awt.event.MouseEvent e) {
-                        JOptionPane.showMessageDialog(DashboardView.this, msgSb.toString(), "Detalles del Día", JOptionPane.INFORMATION_MESSAGE);
+                        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(DashboardView.this);
+                        ModernInfoDialog.showInfoDialog(parentFrame, date.toString(), eventos);
                     }
                 });
             }
