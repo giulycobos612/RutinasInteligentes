@@ -22,6 +22,10 @@ public class GestorMateriasTareas {
         return u;
     }
 
+    public void guardarCambios() {
+        gestorUsuario.guardarCambios();
+    }
+
     // ===================== MATERIAS =====================
 
     public String registrarMateria(String nombreMateria, String nivelDificultad,

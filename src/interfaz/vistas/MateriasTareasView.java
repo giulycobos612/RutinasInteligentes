@@ -237,6 +237,7 @@ public class MateriasTareasView extends JPanel {
         chk.addActionListener(e -> {
             gestor.marcarTareaCompletada(t, chk.isSelected());
             if (chk.isSelected()) {
+                t.setPorcentajeAvance(100);
                 String msg = gestor.obtenerMensajeAvance(t);
                 ModernToast.show(mainFrame, msg, ModernToast.Type.SUCCESS, false);
             } else {
@@ -244,6 +245,32 @@ public class MateriasTareasView extends JPanel {
             }
             actualizarView();
         });
+
+        JSlider slider = new JSlider(0, 100, t.getPorcentajeAvance());
+        slider.setOpaque(false);
+        slider.setPreferredSize(new Dimension(150, 30));
+        JLabel lblProgress = new JLabel(t.getPorcentajeAvance() + "%");
+        lblProgress.setFont(Tema.FONT_PEQUENA);
+        lblProgress.setForeground(Tema.TEXTO_SECUNDARIO);
+        
+        slider.addChangeListener(e -> {
+            lblProgress.setText(slider.getValue() + "%");
+            if (!slider.getValueIsAdjusting()) {
+                t.setPorcentajeAvance(slider.getValue());
+                gestor.guardarCambios();
+            }
+        });
+
+        JPanel leftBox = new JPanel();
+        leftBox.setLayout(new BoxLayout(leftBox, BoxLayout.Y_AXIS));
+        leftBox.setOpaque(false);
+        leftBox.add(chk);
+        
+        JPanel sliderBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        sliderBox.setOpaque(false);
+        sliderBox.add(slider);
+        sliderBox.add(lblProgress);
+        leftBox.add(sliderBox);
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
@@ -272,7 +299,7 @@ public class MateriasTareasView extends JPanel {
         right.add(prioLabel);
         right.add(btnDel);
 
-        p.add(chk, BorderLayout.WEST);
+        p.add(leftBox, BorderLayout.WEST);
         p.add(right, BorderLayout.EAST);
         return p;
     }

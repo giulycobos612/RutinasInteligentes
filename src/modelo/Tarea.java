@@ -13,6 +13,7 @@ public class Tarea implements Serializable {
     private Materia materia;
     private boolean completada;
     private boolean recordatorioActivado;
+    private int porcentajeAvance;
 
     public Tarea(String nombreTarea, LocalDate fechaEntrega, Materia materia) {
         setNombreTarea(nombreTarea);
@@ -20,6 +21,7 @@ public class Tarea implements Serializable {
         setMateria(materia);
         this.completada = false;
         this.recordatorioActivado = false;
+        this.porcentajeAvance = 0;
         calcularPrioridadAut();
     }
 
@@ -56,6 +58,11 @@ public class Tarea implements Serializable {
 
     public boolean isRecordatorioActivado() { return recordatorioActivado; }
     public void setRecordatorioActivado(boolean recordatorioActivado) { this.recordatorioActivado = recordatorioActivado; }
+
+    public int getPorcentajeAvance() { return porcentajeAvance; }
+    public void setPorcentajeAvance(int porcentajeAvance) { 
+        this.porcentajeAvance = Math.max(0, Math.min(100, porcentajeAvance)); 
+    }
 
     private void calcularPrioridadAut() {
         if (fechaEntrega == null) return;

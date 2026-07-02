@@ -161,6 +161,28 @@ public class RutinasView extends JPanel {
         }
         chk.addActionListener(e -> {
             gestor.marcarCumplida(r, chk.isSelected());
+            if (chk.isSelected() && r.getTarea() != null) {
+                JSlider slider = new JSlider(0, 100, r.getTarea().getPorcentajeAvance());
+                slider.setMajorTickSpacing(25);
+                slider.setMinorTickSpacing(5);
+                slider.setPaintTicks(true);
+                slider.setPaintLabels(true);
+                JLabel lblValue = new JLabel("Progreso: " + slider.getValue() + "%", SwingConstants.CENTER);
+                lblValue.setFont(Tema.FONT_BOLD);
+                slider.addChangeListener(ce -> lblValue.setText("Progreso: " + slider.getValue() + "%"));
+
+                JPanel pnl = new JPanel(new BorderLayout(0, 15));
+                pnl.add(new JLabel("¿Que porcentaje de la tarea completaste en esta sesion?"), BorderLayout.NORTH);
+                pnl.add(slider, BorderLayout.CENTER);
+                pnl.add(lblValue, BorderLayout.SOUTH);
+
+                int result = JOptionPane.showConfirmDialog(mainFrame, pnl, "Avance de Tarea", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                if (result == JOptionPane.OK_OPTION) {
+                    r.getTarea().setPorcentajeAvance(slider.getValue());
+                    gestor.guardarCambios();
+                    ModernToast.show(mainFrame, "Avance guardado!", ModernToast.Type.SUCCESS);
+                }
+            }
             actualizarView();
         });
 

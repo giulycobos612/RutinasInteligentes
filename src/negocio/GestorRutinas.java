@@ -26,6 +26,10 @@ public class GestorRutinas {
         return getUsuario().getTareas();
     }
 
+    public void guardarCambios() {
+        gestorUsuario.guardarCambios();
+    }
+
     public void agregarSesion(RutinasEstudio sesion) {
         if (sesion == null) throw new IllegalArgumentException("La sesion no puede ser nula.");
 
