@@ -177,7 +177,7 @@ public class MateriasTareasView extends JPanel {
         ModernButton btnDel = new ModernButton("Eliminar");
         btnDel.setColors(Tema.PELIGRO_LIGHT, Tema.PELIGRO);
         btnDel.setForeground(Tema.PELIGRO);
-        btnDel.setPreferredSize(new Dimension(80, 28));
+        btnDel.setPreferredSize(new Dimension(95, 28));
         btnDel.addActionListener(e -> {
             boolean confirm = ModernConfirmDialog.showConfirmDialog(mainFrame, "Eliminar '" + m.getNombreMateria() + "'?", "Confirmar");
             if (confirm) {
@@ -224,9 +224,9 @@ public class MateriasTareasView extends JPanel {
     }
 
     private JPanel crearTareaItem(Tarea t, Color accent) {
-        JPanel p = new JPanel(new BorderLayout(10, 0));
+        JPanel p = new JPanel(new BorderLayout(0, 5));
         p.setOpaque(false);
-        p.setBorder(new EmptyBorder(5, 5, 5, 5));
+        p.setBorder(new EmptyBorder(5, 5, 10, 5));
 
         JCheckBox chk = new JCheckBox(t.getNombreTarea());
         chk.setOpaque(false);
@@ -249,8 +249,8 @@ public class MateriasTareasView extends JPanel {
         JSlider slider = new JSlider(0, 100, t.getPorcentajeAvance());
         slider.setUI(new ModernSliderUI(slider));
         slider.setOpaque(false);
-        slider.setPreferredSize(new Dimension(150, 25));
-        slider.setMaximumSize(new Dimension(150, 25));
+        slider.setPreferredSize(new Dimension(180, 25));
+        slider.setMaximumSize(new Dimension(180, 25));
         JLabel lblProgress = new JLabel(t.getPorcentajeAvance() + "%");
         lblProgress.setFont(Tema.FONT_PEQUENA.deriveFont(java.awt.Font.BOLD));
         lblProgress.setForeground(Tema.PRIMARIO);
@@ -263,33 +263,26 @@ public class MateriasTareasView extends JPanel {
             }
         });
 
-        JPanel leftBox = new JPanel();
-        leftBox.setLayout(new BoxLayout(leftBox, BoxLayout.Y_AXIS));
-        leftBox.setOpaque(false);
-        leftBox.add(chk);
-        
-        JPanel sliderBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        sliderBox.setOpaque(false);
-        sliderBox.add(slider);
-        sliderBox.add(lblProgress);
-        leftBox.add(sliderBox);
+        // Top Row (Checkbox + Rights)
+        JPanel topRow = new JPanel(new BorderLayout(10, 0));
+        topRow.setOpaque(false);
+        topRow.add(chk, BorderLayout.WEST);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         right.setOpaque(false);
 
-        // Badge de prioridad
         JLabel prioLabel = crearBadge(t.getPrioridad(), Tema.getPrioridadColor(t.getPrioridad()));
 
         JLabel dateLabel = new JLabel(t.getFechaFormateada());
         dateLabel.setFont(Tema.FONT_PEQUENA);
         dateLabel.setForeground(Tema.TEXTO_SECUNDARIO);
 
-        ModernButton btnDel = new ModernButton("Eliminar");
-        btnDel.setColors(Tema.PELIGRO, Tema.PELIGRO.darker());
-        btnDel.setForeground(java.awt.Color.WHITE);
-        btnDel.setFont(Tema.FONT_PEQUENA);
-        btnDel.setPreferredSize(new Dimension(85, 28));
-        btnDel.addActionListener(e -> {
+        ModernButton btnDelT = new ModernButton("Eliminar");
+        btnDelT.setColors(Tema.PELIGRO, Tema.PELIGRO.darker());
+        btnDelT.setForeground(java.awt.Color.WHITE);
+        btnDelT.setFont(Tema.FONT_PEQUENA);
+        btnDelT.setPreferredSize(new Dimension(95, 28));
+        btnDelT.addActionListener(e -> {
             boolean confirm = ModernConfirmDialog.showConfirmDialog(mainFrame, "¿Seguro deseas eliminar esta tarea?", "Confirmar");
             if (confirm) {
                 gestor.eliminarTarea(t);
@@ -299,10 +292,19 @@ public class MateriasTareasView extends JPanel {
 
         right.add(dateLabel);
         right.add(prioLabel);
-        right.add(btnDel);
+        right.add(btnDelT);
+        topRow.add(right, BorderLayout.EAST);
 
-        p.add(leftBox, BorderLayout.WEST);
-        p.add(right, BorderLayout.EAST);
+        // Bottom Row (Slider indented)
+        JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        bottomRow.setOpaque(false);
+        bottomRow.add(Box.createRigidArea(new Dimension(15, 0))); // indent to align with checkbox text
+        bottomRow.add(slider);
+        bottomRow.add(lblProgress);
+
+        p.add(topRow, BorderLayout.NORTH);
+        p.add(bottomRow, BorderLayout.CENTER);
+
         return p;
     }
 
