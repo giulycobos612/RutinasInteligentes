@@ -33,6 +33,28 @@ public class ModernPasswordField extends JPasswordField {
                 repaint();
             }
         });
+
+        // Toggle visibility icon
+        setLayout(new BorderLayout());
+        JLabel eyeIcon = new JLabel("👁"); 
+        eyeIcon.setFont(Tema.FONT_REGULAR.deriveFont(16f));
+        eyeIcon.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        eyeIcon.setBorder(new EmptyBorder(0, 0, 0, 10));
+        eyeIcon.setForeground(Tema.TEXTO_SECUNDARIO);
+        
+        eyeIcon.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (getEchoChar() == (char) 0) {
+                    setEchoChar('•'); // Hide
+                    eyeIcon.setForeground(Tema.TEXTO_SECUNDARIO);
+                } else {
+                    setEchoChar((char) 0); // Show
+                    eyeIcon.setForeground(Tema.PRIMARIO);
+                }
+            }
+        });
+        add(eyeIcon, BorderLayout.EAST);
     }
 
     @Override
