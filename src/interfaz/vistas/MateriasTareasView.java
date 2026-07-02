@@ -175,14 +175,19 @@ public class MateriasTareasView extends JPanel {
         btnEdit.addActionListener(e -> mostrarFormMateria(m));
 
         ModernButton btnDel = new ModernButton("Eliminar");
-        btnDel.setColors(Tema.PELIGRO, Tema.PELIGRO.darker());
-        btnDel.setFont(Tema.FONT_PEQUENA);
-        btnDel.setPreferredSize(new Dimension(75, 28));
+        btnDel.setColors(Tema.PELIGRO_LIGHT, Tema.PELIGRO);
+        btnDel.setForeground(Tema.PELIGRO);
+        btnDel.setPreferredSize(new Dimension(80, 28));
         btnDel.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(mainFrame, "Eliminar '" + m.getNombreMateria() + "' y todas sus tareas?", "Confirmar", JOptionPane.YES_NO_OPTION);
+            int r = JOptionPane.showConfirmDialog(mainFrame, "Eliminar '" + m.getNombreMateria() + "'?", "Confirmar", JOptionPane.YES_NO_OPTION);
             if (r == JOptionPane.YES_OPTION) {
-                gestor.eliminarMateria(m);
-                actualizarView();
+                try {
+                    gestor.eliminarMateria(m);
+                    actualizarView();
+                    ModernToast.show(mainFrame, "Materia eliminada", ModernToast.Type.SUCCESS);
+                } catch (IllegalStateException ex) {
+                    ModernToast.show(mainFrame, ex.getMessage(), ModernToast.Type.ERROR);
+                }
             }
         });
 
@@ -232,7 +237,8 @@ public class MateriasTareasView extends JPanel {
         chk.addActionListener(e -> {
             gestor.marcarTareaCompletada(t, chk.isSelected());
             if (chk.isSelected()) {
-                ModernToast.show(mainFrame, "Tarea archivada en Completadas", ModernToast.Type.SUCCESS);
+                String msg = gestor.obtenerMensajeAvance(t);
+                ModernToast.show(mainFrame, msg, ModernToast.Type.SUCCESS, false);
             } else {
                 ModernToast.show(mainFrame, "Tarea restaurada a Pendientes", ModernToast.Type.INFO);
             }

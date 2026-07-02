@@ -2,6 +2,7 @@ package interfaz.vistas;
 
 import interfaz.componentes.*;
 import modelo.RutinasEstudio;
+import modelo.Tarea;
 import negocio.GestorRutinas;
 
 import javax.swing.*;
@@ -240,17 +241,29 @@ public class RutinasView extends JPanel {
         ModernTextField txtNombre = new ModernTextField("Nombre de la sesion");
         txtNombre.setMaximumSize(new Dimension(380, 42));
 
+        java.util.List<Tarea> misTareas = gestor.getTareas();
+        Object[] items = new Object[misTareas.size() + 1];
+        items[0] = "Sin Tarea Asignada";
+        for (int i = 0; i < misTareas.size(); i++) {
+            items[i + 1] = misTareas.get(i);
+        }
+        JComboBox<Object> cbTarea = new JComboBox<>(items);
+        cbTarea.setFont(Tema.FONT_REGULAR);
+        cbTarea.setMaximumSize(new Dimension(380, 42));
+
         // DatePicker
         final LocalDate[] fechaSel = {editando != null ? editando.getDia() : null};
-        JLabel lblFecha = new JLabel(fechaSel[0] != null ? "Fecha: " + fechaSel[0].format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "Selecciona la fecha:");
+        JLabel lblFecha = new JLabel(fechaSel[0] != null ? "Fecha: " + fechaSel[0].format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : (editando == null ? "Selecciona uno o mas dias:" : "Selecciona la fecha:"));
         lblFecha.setFont(Tema.FONT_BOLD);
         lblFecha.setForeground(Tema.ACENTO);
         lblFecha.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         DatePickerPanel datePicker = new DatePickerPanel(date -> {
-            fechaSel[0] = date;
-            lblFecha.setText("Fecha: " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        });
+            if (editando != null) {
+                fechaSel[0] = date;
+                lblFecha.setText("Fecha: " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            }
+        }, editando == null);
         datePicker.setMaximumSize(new Dimension(380, 250));
         datePicker.setAlignmentX(Component.LEFT_ALIGNMENT);
         if (fechaSel[0] != null) datePicker.setSelectedDate(fechaSel[0]);
@@ -299,6 +312,11 @@ public class RutinasView extends JPanel {
 
         if (editando != null) {
             txtNombre.setText(editando.getNombreSesion());
+            if (editando.getTarea() != null) {
+                cbTarea.setSelectedItem(editando.getTarea());
+            } else {
+                cbTarea.setSelectedIndex(0);
+            }
             cbHoraIni.setSelectedIndex(editando.getHoraInicio().getHour());
             cbMinIni.setSelectedIndex(editando.getHoraInicio().getMinute());
             cbHoraFin.setSelectedIndex(editando.getHoraFin().getHour());
@@ -320,24 +338,33 @@ public class RutinasView extends JPanel {
         btnGuardar.setMaximumSize(new Dimension(380, 42));
         btnGuardar.addActionListener(e -> {
             try {
-                if (fechaSel[0] == null) {
-                    ModernToast.show(mainFrame, "Selecciona una fecha en el calendario.", ModernToast.Type.WARNING);
-                    return;
-                }
                 LocalTime hIni = LocalTime.of(cbHoraIni.getSelectedIndex(), cbMinIni.getSelectedIndex());
                 LocalTime hFin = LocalTime.of(cbHoraFin.getSelectedIndex(), cbMinFin.getSelectedIndex());
+                Tarea tareaSeleccionada = cbTarea.getSelectedIndex() == 0 ? null : (Tarea) cbTarea.getSelectedItem();
 
                 if (editando != null) {
+                    if (fechaSel[0] == null) {
+                        ModernToast.show(mainFrame, "Selecciona una fecha en el calendario.", ModernToast.Type.WARNING);
+                        return;
+                    }
                     gestor.reprogramarSesion(editando, fechaSel[0], hIni, hFin);
                     if (!txtNombre.getText().trim().isEmpty()) editando.setNombreSesion(txtNombre.getText());
+                    editando.setTarea(tareaSeleccionada);
                     editando.setRecordatorioActivado(chkAlerts.isSelected());
                     ModernToast.show(mainFrame, "Sesion actualizada!", ModernToast.Type.SUCCESS);
                 } else {
-                    RutinasEstudio nueva = new RutinasEstudio(fechaSel[0], hIni, hFin);
-                    if (!txtNombre.getText().trim().isEmpty()) nueva.setNombreSesion(txtNombre.getText());
-                    nueva.setRecordatorioActivado(chkAlerts.isSelected());
-                    gestor.agregarSesion(nueva);
-                    ModernToast.show(mainFrame, "Sesion agendada correctamente!", ModernToast.Type.SUCCESS);
+                    java.util.Set<LocalDate> fechas = datePicker.getMultiSelectedDates();
+                    if (fechas.isEmpty()) {
+                        ModernToast.show(mainFrame, "Selecciona al menos una fecha en el calendario.", ModernToast.Type.WARNING);
+                        return;
+                    }
+                    for (LocalDate d : fechas) {
+                        RutinasEstudio nueva = new RutinasEstudio(d, hIni, hFin, tareaSeleccionada);
+                        if (!txtNombre.getText().trim().isEmpty()) nueva.setNombreSesion(txtNombre.getText());
+                        nueva.setRecordatorioActivado(chkAlerts.isSelected());
+                        gestor.agregarSesion(nueva);
+                    }
+                    ModernToast.show(mainFrame, fechas.size() == 1 ? "Sesion agendada!" : fechas.size() + " sesiones agendadas!", ModernToast.Type.SUCCESS);
                 }
                 actualizarView();
             } catch (DateTimeParseException ex) {
@@ -349,8 +376,11 @@ public class RutinasView extends JPanel {
 
         card.add(lblTitle);
         card.add(Box.createRigidArea(new Dimension(0, 15)));
-        card.add(crearLabel("Nombre (opcional)"));
+        card.add(crearLabel("Nombre"));
         card.add(txtNombre);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(crearLabel("Vincular Tarea (Opcional)"));
+        card.add(cbTarea);
         card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(lblFecha);
         card.add(datePicker);

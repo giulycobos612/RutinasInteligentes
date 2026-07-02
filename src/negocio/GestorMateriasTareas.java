@@ -115,8 +115,16 @@ public class GestorMateriasTareas {
 
     public void eliminarMateria(Materia materiaAEliminar) {
         if (materiaAEliminar == null) throw new IllegalArgumentException("La materia no puede ser nula.");
+        
         Usuario u = getUsuario();
-        u.getTareas().removeIf(t -> t.getMateria().getNombreMateria().equalsIgnoreCase(materiaAEliminar.getNombreMateria()));
+
+        boolean tieneTareas = u.getTareas().stream()
+            .anyMatch(t -> t.getMateria().getNombreMateria().equalsIgnoreCase(materiaAEliminar.getNombreMateria()));
+            
+        if (tieneTareas) {
+            throw new IllegalStateException("No se puede eliminar la materia porque aun tiene tareas asociadas. Elimina sus tareas primero.");
+        }
+
         u.getRutinas().removeIf(r -> r.getTarea() != null && r.getTarea().getMateria().getNombreMateria().equalsIgnoreCase(materiaAEliminar.getNombreMateria()));
         u.getMaterias().remove(materiaAEliminar);
         gestorUsuario.guardarCambios();
@@ -128,6 +136,16 @@ public class GestorMateriasTareas {
         u.getRutinas().removeIf(r -> r.getTarea() != null && r.getTarea().equals(tareaAEliminar));
         u.getTareas().remove(tareaAEliminar);
         gestorUsuario.guardarCambios();
+    }
+
+    public String obtenerMensajeAvance(Tarea t) {
+        Usuario u = getUsuario();
+        long totalAvances = u.getRutinas().stream().filter(r -> r.getTarea() != null && r.getTarea().equals(t)).count();
+        long avancesCompletados = u.getRutinas().stream().filter(r -> r.getTarea() != null && r.getTarea().equals(t) && r.isCumplida()).count();
+        if (totalAvances > 0) {
+            return "Felicidades! Tu tarea tenia " + totalAvances + " avances (rutinas), pero ya terminaste en el avance " + avancesCompletados + ".";
+        }
+        return "Tarea archivada en Completadas";
     }
 
     public Materia buscarMateria(String nombreMateria) {

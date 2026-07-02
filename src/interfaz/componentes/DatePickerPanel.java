@@ -10,15 +10,25 @@ import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class DatePickerPanel extends JPanel {
     private YearMonth currentMonth;
     private LocalDate selectedDate;
+    private Set<LocalDate> multiSelectedDates = new HashSet<>();
+    private boolean isMultiSelect = false;
     private Consumer<LocalDate> onDateSelected;
     private JPanel calendarGrid;
     private JLabel lblMonth;
 
     public DatePickerPanel(Consumer<LocalDate> onDateSelected) {
+        this(onDateSelected, false);
+    }
+
+    public DatePickerPanel(Consumer<LocalDate> onDateSelected, boolean isMultiSelect) {
         this.onDateSelected = onDateSelected;
+        this.isMultiSelect = isMultiSelect;
         this.currentMonth = YearMonth.now();
         this.selectedDate = null;
         setOpaque(false);
@@ -91,7 +101,7 @@ public class DatePickerPanel extends JPanel {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                    if (date.equals(selectedDate)) {
+                    if ((isMultiSelect && multiSelectedDates.contains(date)) || (!isMultiSelect && date.equals(selectedDate))) {
                         g2.setColor(Tema.PRIMARIO);
                         g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 8, 8);
                     } else if (date.equals(today)) {
@@ -108,7 +118,7 @@ public class DatePickerPanel extends JPanel {
             dayLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
             dayLabel.setPreferredSize(new Dimension(32, 30));
 
-            if (date.equals(selectedDate)) {
+            if ((isMultiSelect && multiSelectedDates.contains(date)) || (!isMultiSelect && date.equals(selectedDate))) {
                 dayLabel.setForeground(Color.WHITE);
             } else if (date.equals(today)) {
                 dayLabel.setForeground(Tema.PRIMARIO);
@@ -121,7 +131,16 @@ public class DatePickerPanel extends JPanel {
             dayLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    selectedDate = date;
+                    if (isMultiSelect) {
+                        if (multiSelectedDates.contains(date)) {
+                            multiSelectedDates.remove(date);
+                        } else {
+                            multiSelectedDates.add(date);
+                        }
+                    } else {
+                        selectedDate = date;
+                    }
+                    
                     if (onDateSelected != null) {
                         onDateSelected.accept(date);
                     }
@@ -130,14 +149,16 @@ public class DatePickerPanel extends JPanel {
 
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    if (!date.equals(selectedDate)) {
+                    boolean isSel = isMultiSelect ? multiSelectedDates.contains(date) : date.equals(selectedDate);
+                    if (!isSel) {
                         dayLabel.setForeground(Tema.PRIMARIO);
                     }
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    if (!date.equals(selectedDate)) {
+                    boolean isSel = isMultiSelect ? multiSelectedDates.contains(date) : date.equals(selectedDate);
+                    if (!isSel) {
                         if (date.equals(today)) {
                             dayLabel.setForeground(Tema.PRIMARIO);
                         } else if (date.isBefore(today)) {
@@ -178,10 +199,18 @@ public class DatePickerPanel extends JPanel {
         return selectedDate;
     }
 
+    public Set<LocalDate> getMultiSelectedDates() {
+        return multiSelectedDates;
+    }
+
     public void setSelectedDate(LocalDate date) {
         this.selectedDate = date;
         if (date != null) {
             this.currentMonth = YearMonth.of(date.getYear(), date.getMonth());
+            if (isMultiSelect) {
+                multiSelectedDates.clear();
+                multiSelectedDates.add(date);
+            }
         }
         construir();
     }

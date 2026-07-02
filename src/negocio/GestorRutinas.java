@@ -22,6 +22,10 @@ public class GestorRutinas {
         return u;
     }
 
+    public java.util.List<modelo.Tarea> getTareas() {
+        return getUsuario().getTareas();
+    }
+
     public void agregarSesion(RutinasEstudio sesion) {
         if (sesion == null) throw new IllegalArgumentException("La sesion no puede ser nula.");
 

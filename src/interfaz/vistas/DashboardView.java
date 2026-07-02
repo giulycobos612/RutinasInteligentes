@@ -102,8 +102,8 @@ public class DashboardView extends JPanel {
         ModernCard progressCard = new ModernCard(12, true, Tema.EXITO);
         progressCard.setLayout(new BoxLayout(progressCard, BoxLayout.Y_AXIS));
         progressCard.setBorder(new EmptyBorder(18, 22, 18, 22));
-        progressCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 95));
-        progressCard.setPreferredSize(new Dimension(0, 95));
+        progressCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 125));
+        progressCard.setPreferredSize(new Dimension(0, 125));
 
         JLabel lblProgreso = new JLabel("Progreso General");
         lblProgreso.setFont(Tema.FONT_BOLD);
