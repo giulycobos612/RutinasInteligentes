@@ -168,8 +168,20 @@ public class RutinasView extends JPanel {
         chk.addActionListener(e -> {
             gestor.marcarCumplida(r, chk.isSelected());
             if (chk.isSelected() && r.getTarea() != null) {
-                r.getTarea().setPorcentajeAvance(100);
-                gestor.guardarCambios();
+                Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(RutinasView.this);
+                int newProgress = interfaz.componentes.ModernProgressDialog.showProgressDialog(
+                        parentFrame,
+                        "Avance de Tarea",
+                        "¿Qué porcentaje de la tarea '" + r.getTarea().getNombreTarea() + "' has alcanzado tras esta sesión?",
+                        r.getTarea().getPorcentajeAvance());
+                
+                if (newProgress >= 0) {
+                    r.getTarea().setPorcentajeAvance(newProgress);
+                    gestor.guardarCambios();
+                } else {
+                    chk.setSelected(false);
+                    gestor.marcarCumplida(r, false);
+                }
             }
             actualizarView();
         });
