@@ -138,7 +138,7 @@ public class RutinasView extends JPanel {
         card.setAccentTop(false); // barra lateral izquierda
         card.setLayout(new BorderLayout(15, 0));
         card.setBorder(new EmptyBorder(15, 20, 15, 15));
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 115));
 
         // Izquierda: checkbox + nombre
         JPanel left = new JPanel();
@@ -162,26 +162,8 @@ public class RutinasView extends JPanel {
         chk.addActionListener(e -> {
             gestor.marcarCumplida(r, chk.isSelected());
             if (chk.isSelected() && r.getTarea() != null) {
-                JSlider slider = new JSlider(0, 100, r.getTarea().getPorcentajeAvance());
-                slider.setMajorTickSpacing(25);
-                slider.setMinorTickSpacing(5);
-                slider.setPaintTicks(true);
-                slider.setPaintLabels(true);
-                JLabel lblValue = new JLabel("Progreso: " + slider.getValue() + "%", SwingConstants.CENTER);
-                lblValue.setFont(Tema.FONT_BOLD);
-                slider.addChangeListener(ce -> lblValue.setText("Progreso: " + slider.getValue() + "%"));
-
-                JPanel pnl = new JPanel(new BorderLayout(0, 15));
-                pnl.add(new JLabel("¿Que porcentaje de la tarea completaste en esta sesion?"), BorderLayout.NORTH);
-                pnl.add(slider, BorderLayout.CENTER);
-                pnl.add(lblValue, BorderLayout.SOUTH);
-
-                int result = JOptionPane.showConfirmDialog(mainFrame, pnl, "Avance de Tarea", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                if (result == JOptionPane.OK_OPTION) {
-                    r.getTarea().setPorcentajeAvance(slider.getValue());
-                    gestor.guardarCambios();
-                    ModernToast.show(mainFrame, "Avance guardado!", ModernToast.Type.SUCCESS);
-                }
+                r.getTarea().setPorcentajeAvance(100);
+                gestor.guardarCambios();
             }
             actualizarView();
         });
@@ -193,6 +175,34 @@ public class RutinasView extends JPanel {
 
         left.add(chk);
         left.add(timeInfo);
+        
+        if (r.getTarea() != null) {
+            left.add(Box.createRigidArea(new Dimension(0, 6)));
+            JSlider slider = new JSlider(0, 100, r.getTarea().getPorcentajeAvance());
+            slider.setUI(new ModernSliderUI(slider));
+            slider.setPreferredSize(new Dimension(150, 25));
+            slider.setMaximumSize(new Dimension(150, 25));
+            
+            JLabel lblProgress = new JLabel(r.getTarea().getPorcentajeAvance() + "%");
+            lblProgress.setFont(Tema.FONT_PEQUENA.deriveFont(java.awt.Font.BOLD));
+            lblProgress.setForeground(Tema.PRIMARIO);
+            
+            slider.addChangeListener(ce -> {
+                lblProgress.setText(slider.getValue() + "%");
+                if (!slider.getValueIsAdjusting()) {
+                    r.getTarea().setPorcentajeAvance(slider.getValue());
+                    gestor.guardarCambios();
+                }
+            });
+            
+            JPanel sliderBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            sliderBox.setOpaque(false);
+            sliderBox.setBorder(new EmptyBorder(0, 18, 0, 0)); // Align with timeInfo
+            sliderBox.add(slider);
+            sliderBox.add(lblProgress);
+            
+            left.add(sliderBox);
+        }
 
         // Derecha: botones editar y eliminar
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));

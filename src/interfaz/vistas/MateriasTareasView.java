@@ -247,11 +247,13 @@ public class MateriasTareasView extends JPanel {
         });
 
         JSlider slider = new JSlider(0, 100, t.getPorcentajeAvance());
+        slider.setUI(new ModernSliderUI(slider));
         slider.setOpaque(false);
-        slider.setPreferredSize(new Dimension(150, 30));
+        slider.setPreferredSize(new Dimension(150, 25));
+        slider.setMaximumSize(new Dimension(150, 25));
         JLabel lblProgress = new JLabel(t.getPorcentajeAvance() + "%");
-        lblProgress.setFont(Tema.FONT_PEQUENA);
-        lblProgress.setForeground(Tema.TEXTO_SECUNDARIO);
+        lblProgress.setFont(Tema.FONT_PEQUENA.deriveFont(java.awt.Font.BOLD));
+        lblProgress.setForeground(Tema.PRIMARIO);
         
         slider.addChangeListener(e -> {
             lblProgress.setText(slider.getValue() + "%");
