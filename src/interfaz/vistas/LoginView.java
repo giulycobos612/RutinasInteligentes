@@ -38,11 +38,7 @@ public class LoginView extends JPanel {
         card.setPreferredSize(new Dimension(480, 420));
         card.setMaximumSize(new Dimension(480, 420));
 
-        // Icono / Título
-        JLabel lblIcon = new JLabel("\u2302", SwingConstants.CENTER);
-        lblIcon.setFont(new Font("Segoe UI", Font.PLAIN, 48));
-        lblIcon.setForeground(Tema.PRIMARIO);
-        lblIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Icono removido por problemas de fuente
 
         JLabel lblTitulo = new JLabel("Rutinas Inteligentes");
         lblTitulo.setFont(Tema.FONT_TITULO);
@@ -84,7 +80,7 @@ public class LoginView extends JPanel {
         btnIrRegistro.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnIrRegistro.addActionListener(e -> mostrarRegistro());
 
-        card.add(lblIcon);
+        // card.add(lblIcon); (removido)
         card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(lblTitulo);
         card.add(Box.createRigidArea(new Dimension(0, 5)));

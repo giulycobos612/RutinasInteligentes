@@ -36,10 +36,10 @@ public class ModernPasswordField extends JPasswordField {
 
         // Toggle visibility icon
         setLayout(new BorderLayout());
-        JLabel eyeIcon = new JLabel("👁"); 
-        eyeIcon.setFont(Tema.FONT_REGULAR.deriveFont(16f));
+        JLabel eyeIcon = new JLabel("Ver"); 
+        eyeIcon.setFont(Tema.FONT_PEQUENA.deriveFont(Font.BOLD));
         eyeIcon.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        eyeIcon.setBorder(new EmptyBorder(0, 0, 0, 10));
+        eyeIcon.setBorder(new EmptyBorder(0, 0, 0, 15));
         eyeIcon.setForeground(Tema.TEXTO_SECUNDARIO);
         
         eyeIcon.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -47,9 +47,11 @@ public class ModernPasswordField extends JPasswordField {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (getEchoChar() == (char) 0) {
                     setEchoChar('•'); // Hide
+                    eyeIcon.setText("Ver");
                     eyeIcon.setForeground(Tema.TEXTO_SECUNDARIO);
                 } else {
                     setEchoChar((char) 0); // Show
+                    eyeIcon.setText("Ocultar");
                     eyeIcon.setForeground(Tema.PRIMARIO);
                 }
             }
