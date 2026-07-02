@@ -35,12 +35,12 @@ public class ModernPasswordField extends JPasswordField {
         });
 
         // Toggle visibility icon
-        setLayout(new BorderLayout());
+        setLayout(null);
         JLabel eyeIcon = new JLabel("Ver"); 
         eyeIcon.setFont(Tema.FONT_PEQUENA.deriveFont(Font.BOLD));
         eyeIcon.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        eyeIcon.setBorder(new EmptyBorder(0, 0, 0, 15));
         eyeIcon.setForeground(Tema.TEXTO_SECUNDARIO);
+        eyeIcon.setHorizontalAlignment(SwingConstants.CENTER);
         
         eyeIcon.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -56,7 +56,22 @@ public class ModernPasswordField extends JPasswordField {
                 }
             }
         });
-        add(eyeIcon, BorderLayout.EAST);
+        add(eyeIcon);
+
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                int iconWidth = 50;
+                int iconHeight = 24;
+                eyeIcon.setBounds(getWidth() - iconWidth - 10, (getHeight() - iconHeight) / 2, iconWidth, iconHeight);
+            }
+        });
+    }
+
+    @Override
+    public Insets getInsets() {
+        Insets i = super.getInsets();
+        return new Insets(i.top, i.left, i.bottom, i.right + 45);
     }
 
     @Override
@@ -83,7 +98,12 @@ public class ModernPasswordField extends JPasswordField {
             g2.setFont(Tema.FONT_REGULAR);
             FontMetrics fm = g2.getFontMetrics();
             int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+            
+            // Evitar que el placeholder se superponga con el boton
+            Shape oldClip = g2.getClip();
+            g2.clipRect(getInsets().left, 0, getWidth() - getInsets().left - 60, getHeight());
             g2.drawString(placeholder, getInsets().left, y);
+            g2.setClip(oldClip);
         }
         g2.dispose();
     }
